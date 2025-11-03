@@ -2,68 +2,46 @@
 import os
 import shutil
 
-def create_project_structure():
-    """إنشاء هيكل المشروع الكامل"""
-    # تنظيف أولاً
+def create_simple_project():
+    """إنشاء مشروع بسيط"""
     if os.path.exists("android-project"):
         shutil.rmtree("android-project")
     
-    # إنشاء المجلدات الأساسية
-    base_dirs = [
+    # إنشاء المجلدات الأساسية فقط
+    dirs = [
         "android-project/app/src/main/java/com/mediaserver/pro",
         "android-project/app/src/main/res/layout",
         "android-project/app/src/main/res/values",
-        "android-project/app/src/main/res/drawable",
-        "android-project/app/src/main/assets",
-        "android-project/gradle/wrapper",
-        "templates"
     ]
     
-    for dir_path in base_dirs:
-        os.makedirs(dir_path, exist_ok=True)
-        print(f"✅ Created: {dir_path}")
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+    
+    # إنشاء ملفات Gradle الأساسية
+    create_gradle_files()
+    
+    # نسخ ملفات التطبيق
+    copy_app_files()
 
 def create_gradle_files():
     """إنشاء ملفات Gradle الأساسية"""
     
-    # ملف gradle/wrapper/gradle-wrapper.properties
-    wrapper_properties = """distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-bin.zip
-networkTimeout=10000
-validateDistributionUrl=true
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-"""
-    os.makedirs("android-project/gradle/wrapper", exist_ok=True)
-    with open("android-project/gradle/wrapper/gradle-wrapper.properties", "w") as f:
-        f.write(wrapper_properties)
+    # ملف settings.gradle
+    with open("android-project/settings.gradle", "w") as f:
+        f.write("include ':app'\n")
     
-    # ملف gradlew (Gradle wrapper)
-    gradlew_content = """#!/usr/bin/env sh
-
-# Gradle wrapper script
-echo "Gradle Wrapper - Placeholder"
-echo "This will be replaced by actual gradlew during build"
-"""
-    with open("android-project/gradlew", "w") as f:
-        f.write(gradlew_content)
-    os.chmod("android-project/gradlew", 0o755)
-    
-    # ملف build.gradle للمشروع الرئيسي
-    root_build_gradle = """plugins {
+    # ملف build.gradle الرئيسي
+    with open("android-project/build.gradle", "w") as f:
+        f.write("""
+plugins {
     id 'com.android.application' version '8.1.0' apply false
 }
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
-"""
-    with open("android-project/build.gradle", "w") as f:
-        f.write(root_build_gradle)
+""")
     
     # ملف build.gradle للتطبيق
-    app_build_gradle = """plugins {
+    with open("android-project/app/build.gradle", "w") as f:
+        f.write("""
+plugins {
     id 'com.android.application'
 }
 
@@ -77,14 +55,11 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
-        
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             debuggable true
@@ -95,72 +70,102 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    
-    buildFeatures {
-        viewBinding true
-    }
 }
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.10.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
-"""
-    with open("android-project/app/build.gradle", "w") as f:
-        f.write(app_build_gradle)
-    
-    # ملف settings.gradle
-    settings_gradle = """pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+""")
 
-rootProject.name = "MediaServerPro"
-include ':app'
-"""
-    with open("android-project/settings.gradle", "w") as f:
-        f.write(settings_gradle)
-
-def copy_template_files():
-    """نسخ ملفات القوالب"""
-    templates = {
-        "AndroidManifest.xml": "android-project/app/src/main/AndroidManifest.xml",
-        "MainActivity.java": "android-project/app/src/main/java/com/mediaserver/pro/MainActivity.java",
-        "activity_main.xml": "android-project/app/src/main/res/layout/activity_main.xml",
-        "strings.xml": "android-project/app/src/main/res/values/strings.xml",
-    }
+def copy_app_files():
+    """نسخ ملفات التطبيق الأساسية"""
     
-    for template_file, destination in templates.items():
-        if os.path.exists(f"templates/{template_file}"):
-            shutil.copy(f"templates/{template_file}", destination)
-            print(f"✅ Copied: {template_file}")
+    # AndroidManifest.xml
+    with open("android-project/app/src/main/AndroidManifest.xml", "w") as f:
+        f.write("""<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.mediaserver.pro">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Media Server"
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+        
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+""")
+    
+    # MainActivity.java
+    with open("android-project/app/src/main/java/com/mediaserver/pro/MainActivity.java", "w") as f:
+        f.write("""package com.mediaserver.pro;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+public class MainActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        TextView textView = new TextView(this);
+        textView.setText("Media Server Pro - Hello World!");
+        textView.setTextSize(20);
+        setContentView(textView);
+    }
+}
+""")
+    
+    # activity_main.xml
+    with open("android-project/app/src/main/res/layout/activity_main.xml", "w") as f:
+        f.write("""<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Media Server Pro"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+        
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Built with GitHub Actions"
+        android:textSize="16sp"
+        android:layout_marginTop="10dp" />
+
+</LinearLayout>
+""")
+    
+    # strings.xml
+    with open("android-project/app/src/main/res/values/strings.xml", "w") as f:
+        f.write("""<resources>
+    <string name="app_name">Media Server Pro</string>
+</resources>
+""")
 
 def main():
-    print("🚀 Starting Android project generation...")
-    
-    create_project_structure()
-    create_gradle_files()
-    copy_template_files()
-    
-    print("✅ Android project generated successfully!")
-    print("📁 Project structure created")
-    print("🔧 Gradle files configured")
-    print("📋 Template files copied")
+    print("🚀 Creating simple Android project...")
+    create_simple_project()
+    print("✅ Project created successfully!")
+    print("📱 Ready to build APK")
 
 if __name__ == "__main__":
     main()
