@@ -18,13 +18,17 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        
     - name: Generate Android Project
       run: |
         python generate_project.py
+        
+    - name: Set up Android SDK
+      run: |
+        wget https://redirector.gvt1.com/edgedl/android/studio/ide-zips/2023.1.1.28/android-studio-2023.1.1.28-linux.tar.gz
+        tar -xzf android-studio-*.tar.gz
+        export ANDROID_HOME=$PWD/android-studio/android-sdk
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
         
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -36,11 +40,17 @@ jobs:
       run: |
         cd android-project
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon
+        ./gradlew assembleDebug --stacktrace --info
+        
+    - name: Find and List APK Files
+      run: |
+        find android-project -name "*.apk" -type f | head -10
+        ls -la android-project/app/build/outputs/apk/ || echo "APK directory not found"
+        ls -la android-project/app/build/ || echo "Build directory not found"
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: media-server-apk
-        path: android-project/app/build/outputs/apk/debug/*.apk
+        path: android-project/app/build/outputs/**/*.apk
         retention-days: 30
